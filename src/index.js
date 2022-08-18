@@ -1,4 +1,5 @@
 import { Router } from 'itty-router';
+import { recoverPersonalSignature } from "@metamask/eth-sig-util";
 
 const router = Router();
 
@@ -16,9 +17,17 @@ router
 		const body = await request.json();
 
 		const walletAddress = body.walletAddress?.trim();
+		const signedMsg = body.signedMsg?.trim();
 		const walletSignature = body.walletSignature?.trim();
 
-		//TODO validating signature, respond with 401 on failure
+		const signerAddress = recoverPersonalSignature({
+			data: signedMsg,
+			signature: walletSignature
+		  });
+
+		if (walletAddress !== signerAddress) {
+			return new Response(null, { status: 401 });
+		}
 
 		const name = body.name?.trim();
 		const email = body.email?.trim();

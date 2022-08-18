@@ -10,6 +10,7 @@
     "deploy": "wrangler publish"
   },
   "dependencies": {
+    "@metamask/eth-sig-util": "^4.0.1",
     "itty-router": "^2.6.1"
   }
 }

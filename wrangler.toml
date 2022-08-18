@@ -1,5 +1,6 @@
 name = "test-borrower-api"
 main = "src/index.js"
+node_compat = true
 compatibility_date = "2022-08-17"
 
 kv_namespaces = [
