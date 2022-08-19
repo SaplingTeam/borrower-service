@@ -6,3 +6,8 @@ compatibility_date = "2022-08-17"
 kv_namespaces = [
     { binding = "PROFILES", id = "59fbb914d6204889a94aee08e89e5c21", preview_id = "fc688276b1da4e98a35e13aa83b825e3"}
 ]
+
+[vars]
+WORKER_ENV="development"
+
+# Run `echo production | wrangler secret put WORKER_ENV`
