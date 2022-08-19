@@ -85,7 +85,9 @@ export default {
 };
 
 function createHexMsg(name, businessName, phone, email) {
-	const msg = `My name is ${name}. My business name is ${businessName}. My phone is ${phone}. My email is ${email}.`;
+	const msg = `My name is ${name}.\nMy business name is ${businessName}.${
+		phone ? `\nMy phone is ${phone}.` : ''
+	}${email ? `\nMy email is ${email}.` : ''}`;
 	return `0x${Buffer.from(msg, 'utf8').toString('hex')}`;
 }
 
