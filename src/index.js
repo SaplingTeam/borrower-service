@@ -1,14 +1,91 @@
 import { Router } from 'itty-router';
+import { Interface } from '@ethersproject/abi';
 import { recoverPersonalSignature } from '@metamask/eth-sig-util';
 
 const router = Router();
 
 router
 	.options('/profile/:id', corsResponse)
-	.get('/profile/:id', async ({ params }, env) => {
+	.get('/profile/:id', async ({ params, query }, env) => {
 		const { id } = params;
 
+		const { time, signature, poolAddress } = query || {};
+
 		const profile = await env.PROFILES.get(id);
+		if (!signature || !time) {
+			const profileObject = JSON.parse(profile);
+			return new Response(
+				JSON.stringify({
+					name: profileObject.name,
+					businessName: profileObject.businessName,
+				}),
+				{
+					headers: {
+						...getCorsHeaders(env),
+						'content-type': 'application/json',
+					},
+					status: 200,
+				}
+			);
+		}
+
+		const oneDay = 24 * 60 * 60 * 1000;
+		const timeObject = new Date(time);
+		if (Date.now() - timeObject.getTime() > oneDay) {
+			return new Response(null, { headers: getCorsHeaders(env), status: 401 });
+		}
+
+		const signerAddress = recoverPersonalSignature({
+			data: createLoginMessage(timeObject),
+			signature,
+		});
+		if (signerAddress !== profile.walletAddress) {
+			if (poolAddress) {
+				const iface = new Interface([
+					'function manager() view returns (address)',
+				]);
+				const response = await fetch(env.RPC_URL, {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify({
+						jsonrpc: '2.0',
+						id: 1,
+						method: 'eth_call',
+						params: [
+							{ to: poolAddress, data: iface.encodeFunctionData('manager') },
+							'latest',
+						],
+					}),
+				});
+
+				const { result, error } = await response.json();
+
+				if (error) {
+					console.error(error);
+
+					return new Response(null, {
+						headers: getCorsHeaders(env),
+						status: 500,
+					});
+				}
+
+				const manager = `0x${result.substr(26)}`;
+				if (signerAddress !== manager) {
+					return new Response(null, {
+						headers: getCorsHeaders(env),
+						status: 401,
+					});
+				}
+			} else {
+				return new Response(null, {
+					headers: getCorsHeaders(env),
+					status: 401,
+				});
+			}
+		}
+
 		return new Response(profile, {
 			headers: { ...getCorsHeaders(env), 'content-type': 'application/json' },
 			status: profile ? 200 : 404,
@@ -20,6 +97,7 @@ router
 
 		const walletAddress = body.walletAddress?.trim();
 		const walletSignature = body.walletSignature?.trim();
+		const poolAddress = body.poolAddress?.trim();
 
 		const name = body.name?.trim();
 		const email = body.email?.trim();
@@ -29,6 +107,7 @@ router
 		if (
 			!walletAddress ||
 			!walletSignature ||
+			!poolAddress ||
 			!name ||
 			!businessName ||
 			!(email || phone)
@@ -39,7 +118,7 @@ router
 			});
 		}
 
-		const signedMsg = createHexMsg(name, businessName, phone, email);
+		const signedMsg = createStoreMessage(name, businessName, phone, email);
 
 		const signerAddress = recoverPersonalSignature({
 			data: signedMsg,
@@ -64,7 +143,16 @@ router
 		const id = crypto.randomUUID();
 		env.PROFILES.put(
 			id,
-			JSON.stringify({ id, name, email, phone, businessName, digest })
+			JSON.stringify({
+				id,
+				name,
+				email,
+				phone,
+				businessName,
+				digest,
+				poolAddress,
+				walletAddress,
+			})
 		);
 
 		return new Response(JSON.stringify({ id, digest }), {
@@ -84,11 +172,20 @@ export default {
 	},
 };
 
-function createHexMsg(name, businessName, phone, email) {
-	const msg = `My name is ${name}.\nMy business name is ${businessName}.${
-		phone ? `\nMy phone is ${phone}.` : ''
-	}${email ? `\nMy email is ${email}.` : ''}`;
-	return `0x${Buffer.from(msg, 'utf8').toString('hex')}`;
+function createLoginMessage(time) {
+	return createHexMessage(`Authorization ${time.toISOString()}`);
+}
+
+function createStoreMessage(name, businessName, phone, email) {
+	return createHexMessage(
+		`My name is ${name}.\nMy business name is ${businessName}.${
+			phone ? `\nMy phone is ${phone}.` : ''
+		}${email ? `\nMy email is ${email}.` : ''}`
+	);
+}
+
+function createHexMessage(message) {
+	return `0x${Buffer.from(message, 'utf8').toString('hex')}`;
 }
 
 function corsResponse(_request, env) {
@@ -97,8 +194,7 @@ function corsResponse(_request, env) {
 
 function getCorsHeaders(env) {
 	return {
-		'Access-Control-Allow-Origin':
-			env.WORKER_ENV === 'development' ? '*' : 'https://saplingteam.github.io',
+		'Access-Control-Allow-Origin': env.ORIGIN,
 		'Access-Control-Allow-Methods': 'GET,HEAD,POST,OPTIONS',
 		'Access-Control-Max-Age': '86400',
 		'Access-Control-Allow-Headers': '*',
