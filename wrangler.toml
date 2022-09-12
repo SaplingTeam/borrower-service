@@ -13,6 +13,9 @@ RPC_URL = "https://matic-mumbai.chainstacklabs.com"
 
 [env.staging]
 name = "test-borrower-api"
+kv_namespaces = [
+    { binding = "PROFILES", id = "59fbb914d6204889a94aee08e89e5c21", preview_id = "fc688276b1da4e98a35e13aa83b825e3"}
+]
 [env.staging.vars]
 ORIGIN = "https://saplingteam.github.io"
 RPC_URL = "https://matic-mumbai.chainstacklabs.com"
