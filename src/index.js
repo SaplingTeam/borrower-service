@@ -141,7 +141,7 @@ router
 			.join('');
 
 		const id = crypto.randomUUID();
-		env.PROFILES.put(
+		await env.PROFILES.put(
 			id,
 			JSON.stringify({
 				id,
