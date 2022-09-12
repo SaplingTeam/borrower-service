@@ -1,8 +1,6 @@
 # Borrower metadata service
 
-
-
-### Local development
+## Local development
 
 ```
 wrangler dev
@@ -10,13 +8,13 @@ wrangler dev
 
 ## Deployment
 
-### Dev/Default
+### Staging
 
 ```
-wrangler publish
+wrangler publish --env staging
 ```
 
-### Production 
+### Production
 
 ```
 wrangler publish --env production
