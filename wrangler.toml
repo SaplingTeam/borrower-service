@@ -22,6 +22,9 @@ RPC_URL = "https://matic-mumbai.chainstacklabs.com"
 
 [env.production]
 name = "borrower-api"
+kv_namespaces = [
+    { binding = "PROFILES", id = "c75217d882224e5f86762140bf08a19f"}
+]
 [env.production.vars]
 ORIGIN = "https://app.sapling.finance"
 RPC_URL = "https://polygon-rpc.com/"
