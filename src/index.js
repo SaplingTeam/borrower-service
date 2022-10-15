@@ -18,6 +18,9 @@ router
 				JSON.stringify({
 					name: profileObject.name,
 					businessName: profileObject.businessName,
+					isLocalCurrencyLoan: profileObject.isLocalCurrencyLoan,
+					localLoanAmount: profileObject.localLoanAmount,
+					fxRate: profileObject.fxRate,
 				}),
 				{
 					headers: {
@@ -103,6 +106,9 @@ router
 		const email = body.email?.trim();
 		const phone = body.phone?.trim();
 		const businessName = body.businessName?.trim();
+		const isLocalCurrencyLoan = body.isLocalCurrencyLoan;
+		const localLoanAmount = body.localLoanAmount?.trim();
+		const fxRate = body.fxRate?.trim();
 
 		if (
 			!walletAddress ||
@@ -110,7 +116,8 @@ router
 			!poolAddress ||
 			!name ||
 			!businessName ||
-			!(email || phone)
+			!(email || phone) ||
+			isLocalCurrencyLoan && !(localLoanAmount && fxRate)
 		) {
 			return new Response('Required body parameter is missing or invalid', {
 				headers: getCorsHeaders(env),
@@ -152,6 +159,9 @@ router
 				digest,
 				poolAddress,
 				walletAddress,
+				isLocalCurrencyLoan,
+				localLoanAmount,
+				fxRate
 			})
 		);
 
