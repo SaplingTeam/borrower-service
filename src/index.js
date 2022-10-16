@@ -112,11 +112,15 @@ router
 			const localLoanAmount = body.localDetail.localLoanAmount.trim();
 			const localCurrencyCode = body.localDetail.localCurrencyCode.trim();
 			const fxRate = body.localDetail.fxRate;
+			const localInstallmentAmount = "0";
+			const lastLocalInstallmentAmount = "0";
 
 			localDetail = {
 				localLoanAmount,
 				localCurrencyCode,
 				fxRate,
+				localInstallmentAmount,
+				lastLocalInstallmentAmount
 			}
 		}
 
