@@ -19,8 +19,7 @@ router
 					name: profileObject.name,
 					businessName: profileObject.businessName,
 					isLocalCurrencyLoan: profileObject.isLocalCurrencyLoan,
-					localLoanAmount: profileObject.localLoanAmount,
-					fxRate: profileObject.fxRate,
+					localDetail: profileObject.localDetail ?? {},
 				}),
 				{
 					headers: {
@@ -107,8 +106,19 @@ router
 		const phone = body.phone?.trim();
 		const businessName = body.businessName?.trim();
 		const isLocalCurrencyLoan = body.isLocalCurrencyLoan;
-		const localLoanAmount = body.localLoanAmount?.trim();
-		const fxRate = body.fxRate?.trim();
+		let localDetail = null;
+
+		if (isLocalCurrencyLoan) {
+			const localLoanAmount = body.localDetail.localLoanAmount.trim();
+			const localCurrencyCode = body.localDetail.localCurrencyCode.trim();
+			const fxRate = body.localDetail.fxRate;
+
+			localDetail = {
+				localLoanAmount,
+				localCurrencyCode,
+				fxRate,
+			}
+		}
 
 		if (
 			!walletAddress ||
@@ -117,7 +127,7 @@ router
 			!name ||
 			!businessName ||
 			!(email || phone) ||
-			isLocalCurrencyLoan && !(localLoanAmount && fxRate)
+			isLocalCurrencyLoan && !localDetail
 		) {
 			return new Response('Required body parameter is missing or invalid', {
 				headers: getCorsHeaders(env),
@@ -160,8 +170,7 @@ router
 				poolAddress,
 				walletAddress,
 				isLocalCurrencyLoan,
-				localLoanAmount,
-				fxRate
+				localDetail,
 			})
 		);
 
