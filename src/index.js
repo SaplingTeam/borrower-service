@@ -18,6 +18,8 @@ router
 				JSON.stringify({
 					name: profileObject.name,
 					businessName: profileObject.businessName,
+					isLocalCurrencyLoan: profileObject.isLocalCurrencyLoan,
+					localDetail: profileObject.localDetail ?? {},
 				}),
 				{
 					headers: {
@@ -91,6 +93,101 @@ router
 			status: profile ? 200 : 404,
 		});
 	})
+	.patch('/profile/:id', async (request, env) => {
+		const body = await request.json();
+		const { params, query } = request;
+		const { id } = params;
+
+		const { time, signature, poolAddress } = query || {};
+
+		if (
+			!time ||
+			!signature ||
+			!poolAddress
+		) {
+			return new Response(null, {
+				headers: getCorsHeaders(env),
+				status: 401,
+			});
+		}
+
+		const oneDay = 24 * 60 * 60 * 1000;
+		const timeObject = new Date(time);
+		if (Date.now() - timeObject.getTime() > oneDay) {
+			return new Response(null, { headers: getCorsHeaders(env), status: 401 });
+		}
+
+		const signerAddress = recoverPersonalSignature({
+			data: createLoginMessage(timeObject),
+			signature,
+		});
+
+		const iface = new Interface([
+			'function manager() view returns (address)',
+		]);
+		const response = await fetch(env.RPC_URL, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify({
+				jsonrpc: '2.0',
+				id: 1,
+				method: 'eth_call',
+				params: [
+					{ to: poolAddress, data: iface.encodeFunctionData('manager') },
+					'latest',
+				],
+			}),
+		});
+
+		const { result, error } = await response.json();
+
+		if (error) {
+			console.error(error);
+
+			return new Response(null, {
+				headers: getCorsHeaders(env),
+				status: 500,
+			});
+		}
+
+		const manager = `0x${result.substr(26)}`;
+		if (signerAddress !== manager) {
+			return new Response(null, {
+				headers: getCorsHeaders(env),
+				status: 401,
+			});
+		}
+
+		const newLocalDetail = body.localDetail;
+
+		if (
+			!newLocalDetail.localLoanAmount ||
+			!newLocalDetail.localCurrencyCode ||
+			!newLocalDetail.fxRate ||
+			!newLocalDetail.localInstallmentAmount ||
+			!newLocalDetail.lastLocalInstallmentAmount
+		) {
+			return new Response('Required body parameter is missing or invalid', {
+				headers: getCorsHeaders(env),
+				status: 400,
+			});
+		}
+
+		let profile = JSON.parse(await env.PROFILES.get(id));
+		profile.localDetail = newLocalDetail;
+
+		await env.PROFILES.put(
+			profile.id,
+			JSON.stringify(profile)
+		);
+
+		return new Response(null, {
+			headers: { ...getCorsHeaders(env), 'content-type': 'application/json' },
+			status: 201,
+		});
+	})
 	.options('/profile', corsResponse)
 	.post('/profile', async (request, env) => {
 		const body = await request.json();
@@ -103,6 +200,24 @@ router
 		const email = body.email?.trim();
 		const phone = body.phone?.trim();
 		const businessName = body.businessName?.trim();
+		const isLocalCurrencyLoan = body.isLocalCurrencyLoan;
+		let localDetail = null;
+
+		if (isLocalCurrencyLoan) {
+			const localLoanAmount = body.localDetail.localLoanAmount.trim();
+			const localCurrencyCode = body.localDetail.localCurrencyCode.trim();
+			const fxRate = body.localDetail.fxRate;
+			const localInstallmentAmount = "0";
+			const lastLocalInstallmentAmount = "0";
+
+			localDetail = {
+				localLoanAmount,
+				localCurrencyCode,
+				fxRate,
+				localInstallmentAmount,
+				lastLocalInstallmentAmount
+			}
+		}
 
 		if (
 			!walletAddress ||
@@ -110,7 +225,8 @@ router
 			!poolAddress ||
 			!name ||
 			!businessName ||
-			!(email || phone)
+			!(email || phone) ||
+			isLocalCurrencyLoan && !localDetail
 		) {
 			return new Response('Required body parameter is missing or invalid', {
 				headers: getCorsHeaders(env),
@@ -152,6 +268,8 @@ router
 				digest,
 				poolAddress,
 				walletAddress,
+				isLocalCurrencyLoan,
+				localDetail,
 			})
 		);
 
