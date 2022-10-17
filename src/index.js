@@ -166,8 +166,7 @@ router
 			!newLocalDetail.localLoanAmount ||
 			!newLocalDetail.localCurrencyCode ||
 			!newLocalDetail.fxRate ||
-			!newLocalDetail.localInstallmentAmount ||
-			!newLocalDetail.lastLocalInstallmentAmount
+			!newLocalDetail.localInstallmentAmount
 		) {
 			return new Response('Required body parameter is missing or invalid', {
 				headers: getCorsHeaders(env),
@@ -208,14 +207,12 @@ router
 			const localCurrencyCode = body.localDetail.localCurrencyCode.trim();
 			const fxRate = body.localDetail.fxRate;
 			const localInstallmentAmount = "0";
-			const lastLocalInstallmentAmount = "0";
 
 			localDetail = {
 				localLoanAmount,
 				localCurrencyCode,
 				fxRate,
-				localInstallmentAmount,
-				lastLocalInstallmentAmount
+				localInstallmentAmount
 			}
 		}
 
