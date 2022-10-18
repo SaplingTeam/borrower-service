@@ -310,7 +310,7 @@ function corsResponse(_request, env) {
 function getCorsHeaders(env) {
 	return {
 		'Access-Control-Allow-Origin': env.ORIGIN,
-		'Access-Control-Allow-Methods': 'GET,HEAD,POST,OPTIONS',
+		'Access-Control-Allow-Methods': 'GET,HEAD,POST,PATCH,OPTIONS',
 		'Access-Control-Max-Age': '86400',
 		'Access-Control-Allow-Headers': '*',
 	};
