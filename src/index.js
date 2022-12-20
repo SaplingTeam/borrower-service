@@ -44,7 +44,7 @@ router
 		if (signerAddress !== profile.walletAddress) {
 			if (poolAddress) {
 				const iface = new Interface([
-					'function manager() view returns (address)',
+					'function poolManagerRole() view returns (bytes32)',
 				]);
 				const response = await fetch(env.RPC_URL, {
 					method: 'POST',
@@ -56,25 +56,69 @@ router
 						id: 1,
 						method: 'eth_call',
 						params: [
-							{ to: poolAddress, data: iface.encodeFunctionData('manager') },
+							{ to: poolAddress, data: iface.encodeFunctionData('poolManagerRole') },
 							'latest',
 						],
 					}),
 				});
-
+		
 				const { result, error } = await response.json();
-
+		
 				if (error) {
 					console.error(error);
-
+		
 					return new Response(null, {
 						headers: getCorsHeaders(env),
 						status: 500,
 					});
 				}
-
-				const manager = `0x${result.substr(26)}`;
-				if (signerAddress !== manager) {
+		
+				// const manager = `0x${result.substr(26)}`;
+				const poolManagerRole = result;
+		
+				const ac_iface = new Interface([
+					'function hasRole(bytes32 role, address account) view returns (bool)',
+				]);
+		
+				const ac_response = await fetch(env.RPC_URL, {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify({
+						jsonrpc: '2.0',
+						id: 2,
+						method: 'eth_call',
+						params: [
+							{
+								to: env.CORE_ACCESS_CONTROL, data: ac_iface.encodeFunctionData(
+									'hasRole', 
+									[
+										poolManagerRole, 
+										signerAddress
+									]
+								) 
+							},
+							'latest',
+						],
+					}),
+				});
+		
+				const { result: ac_result, error: ac_error } = await ac_response.json();
+		
+				if (ac_error) {
+					console.error(ac_error);
+		
+					return new Response(null, {
+						headers: getCorsHeaders(env),
+						status: 500,
+					});
+				}
+		
+				// const manager = `0x${result.substr(26)}`;
+				const isManager = ac_result;
+		
+				if (isManager != true) {
 					return new Response(null, {
 						headers: getCorsHeaders(env),
 						status: 401,
@@ -123,7 +167,7 @@ router
 		});
 
 		const iface = new Interface([
-			'function manager() view returns (address)',
+			'function poolManagerRole() view returns (bytes32)',
 		]);
 		const response = await fetch(env.RPC_URL, {
 			method: 'POST',
@@ -135,7 +179,7 @@ router
 				id: 1,
 				method: 'eth_call',
 				params: [
-					{ to: poolAddress, data: iface.encodeFunctionData('manager') },
+					{ to: poolAddress, data: iface.encodeFunctionData('poolManagerRole') },
 					'latest',
 				],
 			}),
@@ -152,8 +196,52 @@ router
 			});
 		}
 
-		const manager = `0x${result.substr(26)}`;
-		if (signerAddress !== manager) {
+		// const manager = `0x${result.substr(26)}`;
+		const poolManagerRole = result;
+
+		const ac_iface = new Interface([
+			'function hasRole(bytes32 role, address account) view returns (bool)',
+		]);
+
+		const ac_response = await fetch(env.RPC_URL, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify({
+				jsonrpc: '2.0',
+				id: 2,
+				method: 'eth_call',
+				params: [
+					{
+						to: env.CORE_ACCESS_CONTROL, data: ac_iface.encodeFunctionData(
+							'hasRole', 
+							[
+								poolManagerRole, 
+								signerAddress
+							]
+						) 
+					},
+					'latest',
+				],
+			}),
+		});
+
+		const { result: ac_result, error: ac_error } = await ac_response.json();
+
+		if (ac_error) {
+			console.error(ac_error);
+
+			return new Response(null, {
+				headers: getCorsHeaders(env),
+				status: 500,
+			});
+		}
+
+		// const manager = `0x${result.substr(26)}`;
+		const isManager = ac_result;
+
+		if (isManager != true) {
 			return new Response(null, {
 				headers: getCorsHeaders(env),
 				status: 401,

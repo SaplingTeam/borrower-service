@@ -10,6 +10,7 @@ kv_namespaces = [
 [vars]
 ORIGIN = "*"
 RPC_URL = "https://matic-mumbai.chainstacklabs.com"
+CORE_ACCESS_CONTROL="0x81b8107153F5d53b8aAA0b9b6A3391DFAAf43C84"
 
 [env.staging]
 name = "test-borrower-api"
@@ -19,6 +20,7 @@ kv_namespaces = [
 [env.staging.vars]
 ORIGIN = "https://saplingteam.github.io"
 RPC_URL = "https://matic-mumbai.chainstacklabs.com"
+CORE_ACCESS_CONTROL="0x81b8107153F5d53b8aAA0b9b6A3391DFAAf43C84"
 
 [env.production]
 name = "borrower-api"
@@ -28,3 +30,5 @@ kv_namespaces = [
 [env.production.vars]
 ORIGIN = "https://app.sapling.finance"
 RPC_URL = "https://polygon-rpc.com/"
+CORE_ACCESS_CONTROL=""
+
